@@ -1,0 +1,55 @@
+version: "3.7"
+
+services:
+  overleaf-mongo:
+    image: docker.io/mongo:8.0
+    restart: on-failure
+    stop_grace_period: 1m
+    command: ["--replSet", "overleaf", "--bind_ip_all"]
+    volumes:
+      - ${APP_DATA_DIR}/mongo:/data/db
+
+  overleaf-redis:
+    image: docker.io/redis:7.0
+    restart: on-failure
+    volumes:
+      - ${APP_DATA_DIR}/redis:/data
+
+  mongo-init-replica:
+    image: docker.io/mongo:8.0
+    restart: "no"
+    depends_on:
+      overleaf-mongo:
+        condition: service_started
+    command:
+      - sh
+      - -lc
+      - >
+        sleep 5 && mongosh --host overleaf-mongo --quiet --eval
+        "try { rs.status().ok } catch (e) { rs.initiate({_id: 'overleaf', members: [{_id: 0, host: 'overleaf-mongo:27017'}]}); }"
+
+  web:
+    image: docker.io/sharelatex/sharelatex:latest
+    restart: on-failure
+    depends_on:
+      overleaf-mongo:
+        condition: service_started
+      overleaf-redis:
+        condition: service_started
+      mongo-init-replica:
+        condition: service_completed_successfully
+    ports:
+      - "${APP_PROXY_PORT}:80"
+    volumes:
+      - ${APP_DATA_DIR}/sharelatex:/var/lib/overleaf
+      - ${APP_DATA_DIR}/logs:/var/log/overleaf
+    environment:
+      OVERLEAF_APP_NAME: "Overleaf Umbrel"
+      OVERLEAF_SESSION_SECRET: "${APP_SEED}-session"
+      OVERLEAF_JWT_SECRET: "${APP_SEED}-jwt"
+      OVERLEAF_INVITE_TOKEN_SECRET: "${APP_SEED}-invite"
+      OVERLEAF_MONGO_URL: "mongodb://overleaf-mongo/sharelatex?replicaSet=overleaf"
+      OVERLEAF_REDIS_HOST: "overleaf-redis"
+      REDIS_HOST: "overleaf-redis"
+      REDIS_PORT: 6379
+      TEXLIVE_VERSION: 2026
