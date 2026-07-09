@@ -1,0 +1,17 @@
+id: "overleaf"
+name: "Overleaf"
+version: "6.2.1"
+tagline: "Cloud-based collaborative LaTeX editor"
+description: "Overleaf is a real-time collaborative LaTeX editor that lets you write, edit, and publish your scientific documents locally and securely on your Umbrel."
+developer: "Overleaf (ShareLaTeX)"
+website: "https://www.overleaf.com"
+repo: "https://github.com/sharelatex/sharelatex"
+support: "https://github.com/sharelatex/sharelatex/issues"
+cloud: false
+submitter: "makrron"
+submissionDate: "2026-07-09"
+
+port: 8820
+
+path: ""
+defaultPath: ""
